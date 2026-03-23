@@ -1,0 +1,16 @@
+FROM rust:1-bookworm AS builder
+WORKDIR /build
+
+# Install moq-relay from crates.io
+RUN cargo install moq-relay
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --system --create-home --uid 10001 appuser
+COPY --from=builder /usr/local/cargo/bin/moq-relay /usr/local/bin/moq-relay
+
+USER appuser
+EXPOSE 4443 4080
+ENV RUST_LOG=moq_relay=info
+ENTRYPOINT ["/usr/local/bin/moq-relay", "--server-bind", "0.0.0.0:4443", "--web-http-listen", "0.0.0.0:4443", "--web-ws", "--tls-generate", "localhost", "--auth-public", "anon/"]

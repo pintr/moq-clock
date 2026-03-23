@@ -1,0 +1,52 @@
+[package]
+name = "moq-learning"
+version = "0.1.0"
+edition = "2021"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dependency overview
+#
+#  moq-native  – "batteries included" QUIC/TLS setup built on Quinn + rustls.
+#                Handles certificate management, WebSocket fallback, and the
+#                QUIC handshake for you. Perfect for native desktop/server apps.
+#
+#  moq-lite    – The actual Media over QUIC pub/sub transport layer.
+#                Core concepts: Origin → Broadcast → Track → Group → Frame.
+#
+#  Together they form a layered stack:
+#    [Your App]  ← you are here
+#    [moq-lite]  ← pub/sub transport (broadcasts, tracks, groups, frames)
+#    [moq-native / WebTransport]  ← QUIC transport plumbing
+#    [QUIC / UDP]  ← network
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[bin]]
+name = "moq-clock-pub"
+path = "publisher.rs"
+
+[[bin]]
+name = "moq-clock-sub"
+path = "subscriber.rs"
+
+[dependencies]
+# Core MoQ transport protocol (broadcasts, tracks, groups, frames)
+moq-lite = "0.15"
+
+# QUIC/TLS helpers for native clients — wraps Quinn + rustls
+moq-native = "0.13"
+
+# Async runtime — moq-lite is fully async/await based
+tokio = { version = "1", features = ["full"] }
+
+# Error handling — anyhow is idiomatic for application-level errors
+anyhow = "1"
+
+# URL parsing — moq-native.connect() takes a url::Url
+url = "2"
+
+# For timestamp formatting in our clock example
+chrono = "0.4"
+
+# Structured logging — moq internals emit tracing events
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

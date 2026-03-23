@@ -1,0 +1,12 @@
+FROM rust:1-bookworm AS builder
+WORKDIR /app
+COPY Cargo.toml Cargo.lock ./
+COPY publisher.rs subscriber.rs ./
+RUN cargo build --release --locked --bin moq-clock-sub
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN useradd --system --create-home --uid 10001 appuser
+COPY --from=builder /app/target/release/moq-clock-sub /usr/local/bin/moq-clock-sub
+USER appuser
+ENTRYPOINT ["/usr/local/bin/moq-clock-sub"]
