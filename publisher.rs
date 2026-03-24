@@ -11,7 +11,7 @@
 // RUN IT
 // ------
 //   # Against the public test relay (no auth required under /anon/):
-//   cargo run --bin moq-clock-pub
+//   cargo run --bin moq-clock-pub -- --url https://relay.moq.dev/anon
 //
 //   # Against a local relay (see README for how to run one):
 //   cargo run --bin moq-clock-pub -- --url http://localhost:4443/anon/clock
@@ -29,28 +29,23 @@ use chrono::Local;
 use std::time::Duration;
 use url::Url;
 
-// ── Relay URL to publish to ──────────────────────────────────────────────────
-// The path after the host becomes the relay root path.
-// `/anon/` is a convention for unauthenticated test namespaces.
-const DEFAULT_RELAY: &str = "https://relay.moq.dev/anon";
-
-fn read_relay_url_arg() -> String {
+fn read_relay_url_arg() -> Option<String> {
     let mut args = std::env::args().skip(1);
 
     while let Some(arg) = args.next() {
         if arg == "--url" {
             if let Some(url) = args.next() {
-                return url;
+                return Some(url);
             }
             break;
         }
 
         if !arg.starts_with('-') {
-            return arg;
+            return Some(arg);
         }
     }
 
-    DEFAULT_RELAY.to_string()
+    None
 }
 
 fn normalize_relay_root(mut url: Url) -> Url {
@@ -68,7 +63,7 @@ fn normalize_relay_root(mut url: Url) -> Url {
 async fn main() -> anyhow::Result<()> {
     // ── 1. LOGGING ───────────────────────────────────────────────────────────
     // Set RUST_LOG=debug to see moq-native and moq-lite internals.
-    // e.g.  RUST_LOG=moq_native=debug,moq_lite=debug cargo run --bin moq-clock-pub
+    // e.g.  RUST_LOG=moq_native=debug,moq_lite=debug cargo run --bin moq-clock-pub -- --url http://localhost:4443/anon
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -77,7 +72,11 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // ── 2. PARSE TARGET URL ──────────────────────────────────────────────────
-    let raw_url = read_relay_url_arg();
+    let raw_url = read_relay_url_arg().ok_or_else(|| {
+        anyhow::anyhow!(
+            "missing relay URL: pass --url <relay-url> (example: --url http://localhost:4443/anon)"
+        )
+    })?;
     let parsed = Url::parse(&raw_url).context("invalid relay URL")?;
     let url = normalize_relay_root(parsed);
 

@@ -9,7 +9,7 @@
 //
 // RUN IT (after the publisher is running)
 // ----------------------------------------
-//   cargo run --bin moq-clock-sub
+//   cargo run --bin moq-clock-sub -- --url https://relay.moq.dev/anon
 //
 //   # Against a local relay:
 //   cargo run --bin moq-clock-sub -- --url http://localhost:4443/anon/clock
@@ -33,8 +33,6 @@ use anyhow::Context;
 use std::time::Duration;
 use url::Url;
 
-const DEFAULT_RELAY: &str = "https://relay.moq.dev/anon";
-
 fn normalize_relay_root(mut url: Url) -> Url {
     let trimmed = url.path().trim_end_matches('/').to_string();
     if let Some((parent, leaf)) = trimmed.rsplit_once('/') {
@@ -46,23 +44,23 @@ fn normalize_relay_root(mut url: Url) -> Url {
     url
 }
 
-fn read_relay_url_arg() -> String {
+fn read_relay_url_arg() -> Option<String> {
     let mut args = std::env::args().skip(1);
 
     while let Some(arg) = args.next() {
         if arg == "--url" {
             if let Some(url) = args.next() {
-                return url;
+                return Some(url);
             }
             break;
         }
 
         if !arg.starts_with('-') {
-            return arg;
+            return Some(arg);
         }
     }
 
-    DEFAULT_RELAY.to_string()
+    None
 }
 
 #[tokio::main]
@@ -76,7 +74,11 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // ── 2. PARSE TARGET URL ──────────────────────────────────────────────────
-    let raw_url = read_relay_url_arg();
+    let raw_url = read_relay_url_arg().ok_or_else(|| {
+        anyhow::anyhow!(
+            "missing relay URL: pass --url <relay-url> (example: --url http://localhost:4443/anon)"
+        )
+    })?;
     let parsed = Url::parse(&raw_url).context("invalid relay URL")?;
     let url = normalize_relay_root(parsed);
 

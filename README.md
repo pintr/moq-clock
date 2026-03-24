@@ -42,13 +42,12 @@ Implements a "clock broadcaster": the publisher sends the current time every sec
 
 ```bash
 # Terminal 1 — publish
-cargo run --bin moq-clock-pub
+cargo run --bin moq-clock-pub -- --url https://relay.moq.dev/anon
 
 # Terminal 2 — subscribe
-cargo run --bin moq-clock-sub
+cargo run --bin moq-clock-sub -- --url https://relay.moq.dev/anon
 ```
 
-The binaries default to `https://relay.moq.dev/anon`.
 The `/anon/` namespace is open to everyone — no auth required.
 
 ### 2. Run a local relay (recommended for experimentation)
@@ -107,10 +106,10 @@ podman run --rm moq-clock-subscriber:v1 --url http://host.containers.internal:44
 
 ```bash
 # Publisher connects to public relay
-podman run --rm moq-clock-publisher:v1
+podman run --rm moq-clock-publisher:v1 --url https://relay.moq.dev/anon
 
 # Subscriber connects to public relay
-podman run --rm moq-clock-subscriber:v1
+podman run --rm moq-clock-subscriber:v1 --url https://relay.moq.dev/anon
 ```
 
 To use a custom relay URL with the public setup:
@@ -123,7 +122,7 @@ podman run --rm moq-clock-subscriber:v1 --url http://your-relay.example.com:4443
 ## Debug logging
 
 ```bash
-RUST_LOG=moq_native=debug,moq_lite=debug cargo run --bin moq-clock-pub
+RUST_LOG=moq_native=debug,moq_lite=debug cargo run --bin moq-clock-pub -- --url http://localhost:4443/anon
 ```
 
 ## What to explore next
