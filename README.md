@@ -125,6 +125,57 @@ podman run --rm moq-clock-subscriber:v1 --url http://your-relay.example.com:4443
 RUST_LOG=moq_native=debug,moq_lite=debug cargo run --bin moq-clock-pub -- --url http://localhost:4443/anon
 ```
 
+## Podman handover script (recommended)
+
+Use the Podman handover script at project root:
+
+- `run.sh`
+
+This script creates two Podman subnets and runs:
+
+- subscriber fixed on subnet A
+- publisher moved between subnet A and subnet B at runtime
+- relay attached to both subnets
+
+Quick start:
+
+```bash
+./run.sh build-images
+./run.sh up
+./run.sh switch-publisher-b
+./run.sh switch-publisher-a
+./run.sh down
+```
+
+`./run.sh up` starts relay and opens subscriber/publisher in separate terminals (foreground processes).
+If GUI terminals are unavailable, it falls back to headless background containers.
+
+Force headless mode explicitly:
+
+```bash
+USE_GUI_TERMINALS=0 ./run.sh up
+```
+
+Automated timed switch test:
+
+```bash
+./run.sh simulate
+```
+
+Custom timing (`switch` seconds, `observe` seconds):
+
+```bash
+./run.sh simulate 10 6
+```
+
+Useful logs:
+
+```bash
+./run.sh logs relay
+./run.sh logs subscriber
+./run.sh logs publisher
+```
+
 ## What to explore next
 
 1. **Multiple tracks**: Add an `audio` and `video` track to one Broadcast. The relay delivers them independently and subscribers can pick just the tracks they need.
